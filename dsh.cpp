@@ -40,7 +40,21 @@ using namespace std;
 /*********************/
 //Program 3 Functions//
 /*********************/
-/*
+
+#define SEMKEY 1066
+#define K 1024
+
+// This is defined in linux/sem.h
+// Included here....
+union semun 
+{
+  int              val;       /* value for SETVAL */
+  struct semid_ds *buf;       /* buffer for IPC_STAT, IPC_SET */
+  unsigned short int *array;  /* array for GETALL, SETALL */
+  struct seminfo *__buf;      /* buffer for IPC_INFO */
+};
+
+
 int mexample_main()
 {
 int shmid; 
@@ -167,7 +181,7 @@ int sexample_main()
   semctl(id, 0, IPC_RMID, 0);
   return (0);
   }
-*/
+
 
 //command_mboxwrite
 //
@@ -257,11 +271,11 @@ bool command_mboxdel(ostream& cout)
 // sets up a given number of mailboxes of a given size
 //
 //num_mailboxes - the number of mailboxes to set up
-//mailbox_size - the size of each mailbox
+//mailbox_size - the size of each mailbox in kb
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxinit(int num_mailboxes, mailbox_size, ostream& cout)
+bool command_mboxinit(int num_mailboxes, int mailbox_size, ostream& cout)
 {
     bool success = false;
 
@@ -289,10 +303,10 @@ bool command_mboxinit(int num_mailboxes, mailbox_size, ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxcopy(int mailbox1, mailbox2, ostream& cout)
+bool command_mboxcopy(int mailbox1, int mailbox2, ostream& cout)
 {
     bool success = false;
-    string copy_string; = "";
+    string copy_string = "";
     
     
     //fork
