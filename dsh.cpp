@@ -831,7 +831,7 @@ int main ()
 {
 
     mexample_main();
-    sexample_main()
+    sexample_main();
     return 0;
 
 	bool done = false;
