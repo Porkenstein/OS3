@@ -40,7 +40,7 @@ using namespace std;
 /*********************/
 //Program 3 Functions//
 /*********************/
-
+/*
 int mexample_main()
 {
 int shmid; 
@@ -167,7 +167,7 @@ int sexample_main()
   semctl(id, 0, IPC_RMID, 0);
   return (0);
   }
-
+*/
 
 //command_mboxwrite
 //
