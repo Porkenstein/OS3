@@ -43,7 +43,7 @@ using namespace std;
 /*********************/
 
 #define SEMKEY 1066
-#define SEMKEY 1066
+#define SHMKEY 1066
 #define K 1024
 
 // This is defined in linux/sem.h
