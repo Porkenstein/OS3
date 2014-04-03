@@ -1144,7 +1144,6 @@ int main ()
 						failed = 1;
 					}
             }
-            }
             else if(command == "mboxcopy")
             {
             if(input.find(" ") == -1)
