@@ -79,7 +79,7 @@ int shmid;
   }  
 
   //attach the shared memory to process:
-  addr =  shmat(shmid, 0, 0);
+  addr =  (char*)shmat(shmid, 0, 0);
   printf("addr 0x%x\n", addr);
 
   // Setup a pointer to address an array of integers:
