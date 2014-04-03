@@ -177,9 +177,27 @@ int sexample_main()
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_cmdnm(int mailbox, ostream& cout)
+bool command_mboxwrite(int mailbox, ostream& cout)
 {
-    return true;
+    bool success = false;
+
+    //fork
+
+    //check status of the associated semaphore
+    //if it is locked, wait for it to be unlocked
+    //if it is unlocked, lock it and continue
+    
+    //connect to the mailbox and write to it
+    //exit the connection
+    //unlock the semaphore
+    //success = true
+    
+    //join
+
+    if(success)
+        return true;
+        
+    return false;
 }
 
 //command_mboxread
@@ -192,7 +210,20 @@ bool command_cmdnm(int mailbox, ostream& cout)
 //returns - whether or not there was success
 bool command_mboxread(int mailbox, ostream& cout)
 {
-    return true;
+    bool success = false;
+
+    //fork
+
+    //connect to the mailbox and read from it
+    //exit the connection
+    //success = true
+    
+    //join
+
+    if(success)
+        return true;
+        
+    return false;
 }
 
 //command_mboxdel
@@ -202,9 +233,23 @@ bool command_mboxread(int mailbox, ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxread(ostream& cout)
+bool command_mboxdel(ostream& cout)
 {
-    return true;
+    bool success = false;
+
+    //fork
+
+    //for every semaphore/shared memory
+    
+    //delete the shared memory and semaphore
+    //success = true
+    
+    //join
+
+    if(success)
+        return true;
+        
+    return false;
 }
 
 //command_mboxinit
@@ -216,9 +261,23 @@ bool command_mboxread(ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxread(int num_mailboxes, mailbox_size, ostream& cout)
+bool command_mboxinit(int num_mailboxes, mailbox_size, ostream& cout)
 {
-    return true;
+    bool success = false;
+
+    //fork
+
+    //for i from 0 to num_mailboxes - 1
+    //create a shared memory segment of size mailbox_size and a semaphore
+    
+    //success = true
+    
+    //join
+
+    if(success)
+        return true;
+        
+    return false;
 }
 
 //command_mboxcopy
@@ -230,9 +289,30 @@ bool command_mboxread(int num_mailboxes, mailbox_size, ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxread(int mailbox1, mailbox2, ostream& cout)
+bool command_mboxcopy(int mailbox1, mailbox2, ostream& cout)
 {
-    return true;
+    bool success = false;
+    string copy_string; = "";
+    
+    
+    //fork
+
+    //connect to the mailbox1 and store its contents in a string
+    
+    //check status of the associated semaphore for mailbox2
+    //if it is locked, wait for it to be unlocked
+    //if it is unlocked, lock it and continue
+    
+    //connect to the mailbox2 and write to it
+    //exit the connection
+    //unlock the semaphore
+    
+    //join
+
+    if(success)
+        return true;
+        
+    return false;
 }
 
 
