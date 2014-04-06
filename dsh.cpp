@@ -342,7 +342,7 @@ int sexample_main()
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxwrite(int[] sizes, int[] id, int mailbox, ostream& cout)
+bool command_mboxwrite(int sizes[], int id[], int mailbox, ostream& cout)
 {
     bool success = false;
 
@@ -373,7 +373,7 @@ bool command_mboxwrite(int[] sizes, int[] id, int mailbox, ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxread(int[] sizes, int[] id, int mailbox, ostream& cout)
+bool command_mboxread(int sizes[], int id[], int mailbox, ostream& cout)
 {
     bool success = false;
 
@@ -426,7 +426,7 @@ bool command_mboxdel(ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxinit(int[] sizes, int[] id, int num_mailboxes, int mailbox_size, ostream& cout)
+bool command_mboxinit(int sizes[], int id[], int num_mailboxes, int mailbox_size, ostream& cout)
 {
     bool success = false;
 
@@ -454,7 +454,7 @@ bool command_mboxinit(int[] sizes, int[] id, int num_mailboxes, int mailbox_size
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxcopy(int[] sizes, int[] id, int mailbox1, int mailbox2, ostream& cout)
+bool command_mboxcopy(int sizes[], int id[], int mailbox1, int mailbox2, ostream& cout)
 {
     bool success = false;
     string copy_string = "";
