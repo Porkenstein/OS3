@@ -72,8 +72,8 @@ bool create_infobox()
    return true;
 }
 
-//lock a semaphore.
-void lock_sem(int key)
+//lock a semaphore. Return success
+bool lock_sem(int key)
 {
     union semun options;
 
@@ -90,8 +90,8 @@ void lock_sem(int key)
      return true;
 }
 
-//unlock a semaphore.
-void unlock_sem(int key)
+//unlock a semaphore. Return success
+bool unlock_sem(int key)
 {
     union semun options;
 
@@ -152,13 +152,13 @@ int create_shm(int key, int size)
    return id;
 }
 
-bool del_sem(int id)
+bool del_shm(int id, int size)
 {
-    semctl(id, 0, IPC_RMID, 0);
+    shmctl(id, IPC_RMID, 0);
 }
 
 //writes data to the shared memory at shmkey, truncating it if it runs out of space
-void write_shm(int shmkey, int maxsize, string data)
+void write_shm(int shmid, int maxsize, string data)
 {
   if ( shmid < 0)
   {
@@ -218,6 +218,7 @@ int shmid;
 
   // Using SHMKEY, create one shared memory region with access permissions 0666:
   shmid = shmget(SHMKEY, 10*K, IPC_CREAT | IPC_EXCL | READ_WRITE);
+
   printf ("Shared memory id = %d\n", shmid);
   if ( shmid < 0)
   {
@@ -341,7 +342,7 @@ int sexample_main()
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxwrite(int[128] sizes, int[128] id, int mailbox, ostream& cout)
+bool command_mboxwrite(int[] sizes, int[] id, int mailbox, ostream& cout)
 {
     bool success = false;
 
@@ -372,7 +373,7 @@ bool command_mboxwrite(int[128] sizes, int[128] id, int mailbox, ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxread(int[128] sizes, int[128] id, int mailbox, ostream& cout)
+bool command_mboxread(int[] sizes, int[] id, int mailbox, ostream& cout)
 {
     bool success = false;
 
@@ -425,7 +426,7 @@ bool command_mboxdel(ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxinit(int[128] sizes, int[128] id, int num_mailboxes, int mailbox_size, ostream& cout)
+bool command_mboxinit(int[] sizes, int[] id, int num_mailboxes, int mailbox_size, ostream& cout)
 {
     bool success = false;
 
@@ -453,7 +454,7 @@ bool command_mboxinit(int[128] sizes, int[128] id, int num_mailboxes, int mailbo
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxcopy(int[128] sizes, int[128] id, int mailbox1, int mailbox2, ostream& cout)
+bool command_mboxcopy(int[] sizes, int[] id, int mailbox1, int mailbox2, ostream& cout)
 {
     bool success = false;
     string copy_string = "";
@@ -1074,7 +1075,7 @@ bool command_systat(ostream& cout)
 int main ()
 {
     int shm_sizes[128] = {-1};  //the sizes of each shared memory segment
-    int shm_id[128] = {-1}      //the ids of each shared memory segment
+    int shm_id[128] = {-1};     //the ids of each shared memory segment
 
     mexample_main();
     sexample_main();
