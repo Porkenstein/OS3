@@ -42,9 +42,14 @@ using namespace std;
 //Program 3 Functions//
 /*********************/
 
-#define SEMKEY 1066
-#define SHMKEY 1066
-#define K 1024
+#define SEMKEY 1129 //the key of semaphore 0
+#define SHMKEY 1000 //the key of mailbox 0
+
+#define INFOBOXKEY 1128 //the key of the info_box
+#define NUMBOXES 128    //the max number of boxes and keys.  mailboxes are referenced as "mailbox 0 - 128"
+#define K 1024  //bytes in a kb
+
+#define READ_WRITE 0666
 
 // This is defined in linux/sem.h
 // Included here....
@@ -56,6 +61,149 @@ union semun
   struct seminfo *__buf;      /* buffer for IPC_INFO */
 };
 
+
+//The function to setup the infobox, if it does not already exist
+bool create_infobox()
+{
+    if ((shmget(INFOBOXKEY, 10*K, READ_WRITE | IPC_CREAT | IPC_EXCL)) < 0)  //0666 permits read and write
+       {
+          return false;
+       }
+   return true;
+}
+
+//lock a semaphore.
+void lock_sem(int key)
+{
+    union semun options;
+
+    // Using SEMKEY, create one semaphore with access permissions 0666:
+    int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
+
+     options.val = 1;
+     semctl(id , 0, SETVAL, options); 
+      
+      // Test that the semaphore was created correctly:
+     if (semctl(id, 0, GETVAL, 0) ==0 ) {
+       return false;
+     }
+     return true;
+}
+
+//unlock a semaphore.
+void unlock_sem(int key)
+{
+    union semun options;
+
+    // Using SEMKEY, create one semaphore with access permissions 0666:
+    int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
+
+     options.val = 0;
+     semctl(id , 0, SETVAL, options); 
+      
+      // Test that the semaphore was created correctly:
+     if (semctl(id, 0, GETVAL, 0) ==0 ) {
+       return false;
+     }
+     return true;
+}
+
+//returns true if the semaphore is unlocked.  Returns false if it's locked
+bool locked(int key)
+{
+    int id = semget(key + SEMKEY, 1, READ_WRITE);
+    return semctl(id, 0, GETVAL, 0);    //1 is locked, 0 is unlocked
+}
+
+//creates a new semaphore with a specified key. Returns the id, or -1 if unsuccessful
+int create_sem(int key)
+{
+  union semun options;
+
+  // Using SEMKEY, create one semaphore with access permissions 0666:
+  int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
+  
+  // Initialize the semaphore at index 0
+  options.val = 1;
+  semctl(id , 0, SETVAL, options); 
+  
+  // Test that the semaphore was created correctly:
+  if (semctl(id, 0, GETVAL, 0) ==0 ) {
+    return -1;
+  }
+  return id;
+}
+
+bool del_sem(int key)
+{
+    int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
+    semctl(id, 0, IPC_RMID, 0);
+}
+
+//creates a new shared memory with a specified key and size in kb. Returns the id, or -1 if unsuccessful
+int create_shm(int key, int size)
+{
+    int id = -1;
+
+    if ((id = shmget(key + SHMKEY, K * size, READ_WRITE | IPC_CREAT | IPC_EXCL)) < 0)  //0666 permits read and write
+       {
+          return -1;
+       }
+   return id;
+}
+
+bool del_sem(int id)
+{
+    semctl(id, 0, IPC_RMID, 0);
+}
+
+//writes data to the shared memory at shmkey, truncating it if it runs out of space
+void write_shm(int shmkey, int maxsize, string data)
+{
+  if ( shmid < 0)
+  {
+    return;
+  }  
+
+  //attach the shared memory to process:
+  char *addr =  (char*)shmat(shmid, 0, 0);
+
+  //build a return string
+  string output = "";
+  
+  int i;
+  for(i = 0; (i < data.size()) && (i < (maxsize - 1)); i++ )
+  {
+      *(addr + i) = data[i];
+  }
+  *(addr + i) = '\0';
+ 
+}
+
+//returns the contents of a shared memory segment
+string read_shm(int shmid)
+{
+  if ( shmid < 0)
+  {
+    return "e";
+  }  
+
+  //attach the shared memory to process:
+  char *addr =  (char*)shmat(shmid, 0, 0);
+
+  //build a return string
+  string output = "";
+  
+  int i = 0;
+  while(*addr != '\0')
+  {
+    output.push_back(*(addr + i));
+    i++;
+  }
+  
+  return output;
+  
+}
 
 int mexample_main()
 {
@@ -69,7 +217,7 @@ int shmid;
   printf ("A shared memory test\n");
 
   // Using SHMKEY, create one shared memory region with access permissions 0666:
-  shmid = shmget(SHMKEY, 10*K, IPC_CREAT | IPC_EXCL | 0666);
+  shmid = shmget(SHMKEY, 10*K, IPC_CREAT | IPC_EXCL | READ_WRITE);
   printf ("Shared memory id = %d\n", shmid);
   if ( shmid < 0)
   {
@@ -130,7 +278,7 @@ int sexample_main()
   printf ("A semaphore test\n");
 
   // Using SEMKEY, create one semaphore with access permissions 0666:
-  id = semget(SEMKEY, 1, IPC_CREAT | IPC_EXCL | 0666);
+  id = semget(SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
   printf ("Semaphore id = %d\n", id);
   
   // Initialize the semaphore at index 0
@@ -193,7 +341,7 @@ int sexample_main()
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxwrite(int mailbox, ostream& cout)
+bool command_mboxwrite(int[128] sizes, int[128] id, int mailbox, ostream& cout)
 {
     bool success = false;
 
@@ -224,7 +372,7 @@ bool command_mboxwrite(int mailbox, ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxread(int mailbox, ostream& cout)
+bool command_mboxread(int[128] sizes, int[128] id, int mailbox, ostream& cout)
 {
     bool success = false;
 
@@ -277,7 +425,7 @@ bool command_mboxdel(ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxinit(int num_mailboxes, int mailbox_size, ostream& cout)
+bool command_mboxinit(int[128] sizes, int[128] id, int num_mailboxes, int mailbox_size, ostream& cout)
 {
     bool success = false;
 
@@ -305,7 +453,7 @@ bool command_mboxinit(int num_mailboxes, int mailbox_size, ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxcopy(int mailbox1, int mailbox2, ostream& cout)
+bool command_mboxcopy(int[128] sizes, int[128] id, int mailbox1, int mailbox2, ostream& cout)
 {
     bool success = false;
     string copy_string = "";
@@ -925,6 +1073,8 @@ bool command_systat(ostream& cout)
 //returns - an error code. 0 is no errors.
 int main ()
 {
+    int shm_sizes[128] = {-1};  //the sizes of each shared memory segment
+    int shm_id[128] = {-1}      //the ids of each shared memory segment
 
     mexample_main();
     sexample_main();
@@ -1177,7 +1327,7 @@ int main ()
 					//check to see if there were more than two arguments or only one argument
 					else if(args[1].find(" ") == -1 && arguments.find(" ") != -1)
 					{
-						if (!command_mboxinit(atoi(args[0].c_str()), atoi(args[1].c_str()), cout))
+						if (!command_mboxinit(shm_sizes, shm_id, atoi(args[0].c_str()), atoi(args[1].c_str()), cout))
 							cout << "Failed to init " + args[0] + " mailboxes with size " + args[1] + "kb.\n\n";
 					}
 					else
@@ -1210,7 +1360,7 @@ int main ()
 					//check to see if there was only one argument	
 					if(args[0].find(" ") == -1)
 					{
-						if (!command_mboxwrite(atoi(args[0].c_str()), cout))
+						if (!command_mboxwrite(shm_sizes, shm_id, atoi(args[0].c_str()), cout))
 							cout << "Failed to open mailbox " + args[0] + " for writing.\n\n";
 					}
 					else
@@ -1233,7 +1383,7 @@ int main ()
 					//check to see if there was only one argument	
 					if(args[0].find(" ") == -1)
 					{
-						if (!command_mboxread(atoi(args[0].c_str()), cout))
+						if (!command_mboxread(shm_sizes, shm_id, atoi(args[0].c_str()), cout))
 							cout << "Failed to open mailbox " + args[0] + " for reading.\n\n";
 					}
 					else
@@ -1259,7 +1409,7 @@ int main ()
 					//check to see if there were more than two arguments or only one argument
 					else if(args[1].find(" ") == -1 && arguments.find(" ") != -1)
 					{
-						if (!command_mboxcopy(atoi(args[0].c_str()), atoi(args[1].c_str()), cout))
+						if (!command_mboxcopy(shm_sizes, shm_id, atoi(args[0].c_str()), atoi(args[1].c_str()), cout))
 							cout << "Failed to copy data from mailbox " + args[0] + " to mailbox " + args[1] + ".\n\n";
 					}
 					else
