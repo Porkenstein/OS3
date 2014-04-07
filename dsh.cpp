@@ -245,11 +245,13 @@ int create_sem(int key)
 bool del_sem(int key)
 {
     int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
+    cout << "deleting semaphore with id " << id;
     semctl(id, 0, IPC_RMID, 0);
 }
 
 bool del_shm(int id, int size)
 {
+    cout << "deleting mailbox with id " << id;
     shmctl(id, IPC_RMID, 0);
 }
 
@@ -496,7 +498,7 @@ bool command_mboxread(int sizes[], int id[], int mailbox, ostream& cout)
 //returns - whether or not there was success
 bool command_mboxdel(int sizes[], int id[], ostream& cout)
 {
-    bool success = false;
+    bool success = true;
 
     for(int i = 0; i < NUMBOXES; i++)
     {
@@ -537,6 +539,9 @@ bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, in
         sizes[i] = mailbox_size;
         id[i] = create_shm(i, mailbox_size);
         success = create_sem(i);
+        
+        cout << "created mailbox of size " << sizes[i] << "\n";
+        cout << "\t and id " << id[i];
     }
     current = i;
     
