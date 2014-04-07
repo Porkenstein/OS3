@@ -1431,7 +1431,7 @@ int main ()
 					//check to see if there were more than two arguments or only one argument
 					else if(args[1].find(" ") == -1 && arguments.find(" ") != -1)
 					{
-						if (!command_mboxinit(shm_sizes, shm_id, atoi(args[0].c_str()), current_box, atoi(args[1].c_str()), cout))
+						if (!command_mboxinit(shm_sizes, shm_id, current_box, atoi(args[0].c_str()), atoi(args[1].c_str()), cout))
 							cout << "Failed to init " + args[0] + " mailboxes with size " + args[1] + "kb.\n\n";
 					}
 					else
