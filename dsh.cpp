@@ -45,6 +45,7 @@ using namespace std;
 #define SEMKEY 1129 //the key of semaphore 0
 #define SHMKEY 1000 //the key of mailbox 0
 
+#define CURRENTBOXKEY 999   //the key of the box holding the current number of boxes
 #define INFOBOXKEY 1128 //the key of the info_box
 #define NUMBOXES 128    //the max number of boxes and keys.  mailboxes are referenced as "mailbox 0 - 128"
 #define K 1024  //bytes in a kb
@@ -62,14 +63,109 @@ union semun
 };
 
 
+int get_current()
+{
+
+  //attach the shared memory to process:
+  int shmid =  shmget(CURRENTBOXKEY, 32, READ_WRITE);
+  
+  if(shmid == -1)
+    return 0;
+  
+  char *addr =  (char*)shmat(shmid, 0, 0);
+
+  pint = (int *) addr;
+  return *(pint);
+}
+
+bool set_current(int current)
+{
+//attach the shared memory to process:
+  int shmid =  shmget(CURRENTBOXKEY, 32, READ_WRITE);
+  
+  if(shmid == -1)
+    return false;
+    
+  char *addr =  (char*)shmat(shmid, 0, 0);
+    
+  pint = (int *) addr;
+  *(pint) = current;
+  
+  return true;
+}
+
 //The function to setup the infobox, if it does not already exist
 bool create_infobox()
 {
+    //create currentbox
+    if ((shmget(CURRENTBOXKEY, 32, READ_WRITE | IPC_CREAT | IPC_EXCL)) < 0)  //0666 permits read and write
+       {
+          return false;
+       }
     if ((shmget(INFOBOXKEY, 10*K, READ_WRITE | IPC_CREAT | IPC_EXCL)) < 0)  //0666 permits read and write
        {
           return false;
        }
    return true;
+}
+
+bool del_infobox()
+{
+    int shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
+    shmctl(shmid, IPC_RMID, 0);
+    
+    //delete the currentbox
+    shmid = shmget(CURRENTBOXKEY, 32, READ_WRITE);
+    shmctl(shmid, IPC_RMID, 0);
+    
+}
+
+//read and store the sizes from the infobox, then attempt to find the ids of each segment using the size
+bool get_info(int sizes[], int ids[])
+{
+    shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
+
+    if ( shmid < 0)
+    {
+        return false;
+    }  
+
+    //attach the shared memory to process:
+    addr =  (char*)shmat(shmid, 0, 0);
+
+    // Setup a pointer to address an array of integers:
+    pint = (int *) addr;
+
+    // Read data back and write to stdout:
+    for (i=0;i<NUMBOXES;i++)
+    {
+        sizes[i] = *(pint + i);
+        ids[i] = create_shm(SHMKEY + i, sizes[i]);
+    }
+    return true;
+}
+
+bool set_info(int sizes[], int ids[])
+{
+    shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
+
+    if ( shmid < 0)
+    {
+        return false;
+    }  
+
+    //attach the shared memory to process:
+    addr =  (char*)shmat(shmid, 0, 0);
+
+    // Setup a pointer to address an array of integers:
+    pint = (int *) addr;
+
+    // Read data back and write to stdout:
+    for (i=0;i<NUMBOXES;i++)
+    {
+        *(pint + i) = sizes[i];
+    }
+    return true;
 }
 
 //lock a semaphore. Return success
@@ -123,8 +219,8 @@ int create_sem(int key)
   // Using SEMKEY, create one semaphore with access permissions 0666:
   int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
   
-  // Initialize the semaphore at index 0
-  options.val = 1;
+  // Initialize the semaphore to unlocked
+  options.val = 0;
   semctl(id , 0, SETVAL, options); 
   
   // Test that the semaphore was created correctly:
@@ -398,19 +494,18 @@ bool command_mboxread(int sizes[], int id[], int mailbox, ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxdel(ostream& cout)
+bool command_mboxdel(int sizes[], int id[], ostream& cout)
 {
     bool success = false;
 
-    //fork
+    for(int i = 0; i < NUMBOXES; i++)
+    {
+        del_sem(i);
+        del_shm(id[i], sizes[i]);
+    }
 
-    //for every semaphore/shared memory
+    del_infobox();
     
-    //delete the shared memory and semaphore
-    //success = true
-    
-    //join
-
     if(success)
         return true;
         
@@ -426,19 +521,28 @@ bool command_mboxdel(ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxinit(int sizes[], int id[], int num_mailboxes, int mailbox_size, ostream& cout)
+bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, int mailbox_size, ostream& cout)
 {
-    bool success = false;
+    bool success = true;
 
-    //fork
-
-    //for i from 0 to num_mailboxes - 1
-    //create a shared memory segment of size mailbox_size and a semaphore
+    //create the info boxes, if they haven't already been created.
+    success = create_infobox();
     
-    //success = true
+    //make sure the user isn't exceeding the max number of boxes
+    num_mailboxes = min(NUMBOXES, num_mailboxes);   
     
-    //join
-
+    int i;
+    for(i = current; i < num_mailboxes; i++)
+    {
+        sizes[i] = mailbox_size;
+        id[i] = create_shm(i, mailbox_size);
+        success = create_sem(i);
+    }
+    current = i;
+    
+    set_current(i);
+    set_info(sizes, id);
+    
     if(success)
         return true;
         
@@ -1074,19 +1178,18 @@ bool command_systat(ostream& cout)
 //returns - an error code. 0 is no errors.
 int main ()
 {
-    int shm_sizes[128] = {-1};  //the sizes of each shared memory segment
-    int shm_id[128] = {-1};     //the ids of each shared memory segment
-
-    mexample_main();
-    sexample_main();
-    return 0;
-
+    int shm_sizes[NUMBOXES] = {-1};  //the sizes of each shared memory segment
+    int shm_id[NUMBOXES] = {-1};     //the ids of each shared memory segment
+    
+    //attempt to find any and all pre-existing information
+    int current_box = get_current();
+    get_info(shm_sizes, shm_id);
+    
 	bool done = false;
 	string input;
 	string command;
 	string args[2];
 	char input_cstr[100];
-
 
 	//register the signal handler
 	signal (SIGINT, catch_signal);
@@ -1328,7 +1431,7 @@ int main ()
 					//check to see if there were more than two arguments or only one argument
 					else if(args[1].find(" ") == -1 && arguments.find(" ") != -1)
 					{
-						if (!command_mboxinit(shm_sizes, shm_id, atoi(args[0].c_str()), atoi(args[1].c_str()), cout))
+						if (!command_mboxinit(shm_sizes, shm_id, atoi(args[0].c_str()), current_box, atoi(args[1].c_str()), cout))
 							cout << "Failed to init " + args[0] + " mailboxes with size " + args[1] + "kb.\n\n";
 					}
 					else
@@ -1341,8 +1444,10 @@ int main ()
 					failed = 0;
 				else
 				{
+                    current_box = 0;
 					if (!command_mboxdel(cout))
 						cout << "Failed to delete mailboxes and semaphores.\n\n";
+                    
 				}
             }
             else if(command == "mboxwrite")
@@ -1482,5 +1587,6 @@ int main ()
 		}
 	}
 	cout << "Exiting application.\n\n";
+    command_mboxdel(cout)
 	return 0;
 }
