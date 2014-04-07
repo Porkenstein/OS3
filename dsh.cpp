@@ -231,6 +231,8 @@ int create_sem(int key)
   // Using SEMKEY, create one semaphore with access permissions 0666:
   int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
   
+  cout << "\ncreated semaphore with id " << id << "\n";
+  
   // Initialize the semaphore to unlocked
   options.val = 0;
   semctl(id , 0, SETVAL, options); 
@@ -244,14 +246,14 @@ int create_sem(int key)
 
 bool del_sem(int key)
 {
-    int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
-    cout << "deleting semaphore with id " << id;
+    int id = semget(key + SEMKEY, 1, READ_WRITE);
+    cout << "\ndeleting semaphore with id " << id;
     semctl(id, 0, IPC_RMID, 0);
 }
 
 bool del_shm(int id, int size)
 {
-    cout << "deleting mailbox with id " << id;
+    cout << "\ndeleting mailbox with id " << id;
     shmctl(id, IPC_RMID, 0);
 }
 
@@ -502,12 +504,13 @@ bool command_mboxdel(int sizes[], int id[], ostream& cout)
 
     for(int i = 0; i < NUMBOXES; i++)
     {
-        del_sem(i);
-        del_shm(id[i], sizes[i]);
+        if(id[i] >= 0)
+        {
+            del_sem(i);
+            del_shm(id[i], sizes[i]);
+        }
     }
 
-    del_infobox();
-    
     if(success)
         return true;
         
@@ -527,9 +530,6 @@ bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, in
 {
     bool success = true;
 
-    //create the info boxes, if they haven't already been created.
-    success = create_infobox();
-    
     //make sure the user isn't exceeding the max number of boxes
     num_mailboxes = min(NUMBOXES, num_mailboxes);   
     
@@ -1188,7 +1188,10 @@ int main ()
     
     //attempt to find any and all pre-existing information
     int current_box = get_current();
-    get_info(shm_sizes, shm_id);
+    if(!get_info(shm_sizes, shm_id))
+        create_infobox();
+    else
+        cout << "\nfound infobox\n";
     
 	bool done = false;
 	string input;
@@ -1593,5 +1596,6 @@ int main ()
 	}
 	cout << "Exiting application.\n\n";
     command_mboxdel(shm_sizes, shm_id, cout);
+    del_infobox();
 	return 0;
 }
