@@ -63,6 +63,18 @@ union semun
 };
 
 
+//creates a new shared memory with a specified key and size in kb. Returns the id, or -1 if unsuccessful
+int create_shm(int key, int size)
+{
+    int id = -1;
+
+    if ((id = shmget(key + SHMKEY, K * size, READ_WRITE | IPC_CREAT | IPC_EXCL)) < 0)  //0666 permits read and write
+       {
+          return -1;
+       }
+   return id;
+}
+
 int get_current()
 {
 
@@ -74,7 +86,7 @@ int get_current()
   
   char *addr =  (char*)shmat(shmid, 0, 0);
 
-  pint = (int *) addr;
+  int *pint = (int *) addr;
   return *(pint);
 }
 
@@ -88,7 +100,7 @@ bool set_current(int current)
     
   char *addr =  (char*)shmat(shmid, 0, 0);
     
-  pint = (int *) addr;
+  int *pint = (int *) addr;
   *(pint) = current;
   
   return true;
@@ -123,7 +135,7 @@ bool del_infobox()
 //read and store the sizes from the infobox, then attempt to find the ids of each segment using the size
 bool get_info(int sizes[], int ids[])
 {
-    shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
+    int shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
 
     if ( shmid < 0)
     {
@@ -131,13 +143,13 @@ bool get_info(int sizes[], int ids[])
     }  
 
     //attach the shared memory to process:
-    addr =  (char*)shmat(shmid, 0, 0);
+    char *addr =  (char*)shmat(shmid, 0, 0);
 
     // Setup a pointer to address an array of integers:
-    pint = (int *) addr;
+    int *pint = (int *) addr;
 
     // Read data back and write to stdout:
-    for (i=0;i<NUMBOXES;i++)
+    for (int i=0;i<NUMBOXES;i++)
     {
         sizes[i] = *(pint + i);
         ids[i] = create_shm(SHMKEY + i, sizes[i]);
@@ -145,9 +157,9 @@ bool get_info(int sizes[], int ids[])
     return true;
 }
 
-bool set_info(int sizes[], int ids[])
+bool set_info(int sizes[])
 {
-    shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
+    int shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
 
     if ( shmid < 0)
     {
@@ -155,13 +167,13 @@ bool set_info(int sizes[], int ids[])
     }  
 
     //attach the shared memory to process:
-    addr =  (char*)shmat(shmid, 0, 0);
+    char *addr =  (char*)shmat(shmid, 0, 0);
 
     // Setup a pointer to address an array of integers:
-    pint = (int *) addr;
+    int *pint = (int *) addr;
 
     // Read data back and write to stdout:
-    for (i=0;i<NUMBOXES;i++)
+    for (int i=0;i<NUMBOXES;i++)
     {
         *(pint + i) = sizes[i];
     }
@@ -234,18 +246,6 @@ bool del_sem(int key)
 {
     int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
     semctl(id, 0, IPC_RMID, 0);
-}
-
-//creates a new shared memory with a specified key and size in kb. Returns the id, or -1 if unsuccessful
-int create_shm(int key, int size)
-{
-    int id = -1;
-
-    if ((id = shmget(key + SHMKEY, K * size, READ_WRITE | IPC_CREAT | IPC_EXCL)) < 0)  //0666 permits read and write
-       {
-          return -1;
-       }
-   return id;
 }
 
 bool del_shm(int id, int size)
@@ -541,7 +541,7 @@ bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, in
     current = i;
     
     set_current(i);
-    set_info(sizes, id);
+    set_info(sizes);
     
     if(success)
         return true;
@@ -1445,7 +1445,7 @@ int main ()
 				else
 				{
                     current_box = 0;
-					if (!command_mboxdel(cout))
+					if (!command_mboxdel(shm_sizes, shm_id, cout))
 						cout << "Failed to delete mailboxes and semaphores.\n\n";
                     
 				}
@@ -1587,6 +1587,6 @@ int main ()
 		}
 	}
 	cout << "Exiting application.\n\n";
-    command_mboxdel(cout)
+    command_mboxdel(shm_sizes, shm_id, cout);
 	return 0;
 }
