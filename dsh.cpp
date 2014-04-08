@@ -1453,7 +1453,7 @@ int main ()
                 get_info(shm_sizes, shm_id);
                 current_box = get_current();
                 
-                cout << "\n" << current box << " mailboxes:\n";
+                cout << "\n" << current_box << " mailboxes:\n";
                 for(int i = 0; i < current_box; i++)
                 {
                         cout << "\tMailbox id " << shm_id[i] << ": size " << shm_sizes[i] <<"\n";
