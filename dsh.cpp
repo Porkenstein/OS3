@@ -159,8 +159,8 @@ bool get_info(int sizes[], int ids[])
 
 bool set_info(int sizes[])
 {
-    ishmdt(shared_memory)nt shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
-
+    int shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
+    
     if ( shmid < 0)
     {
         return false;
