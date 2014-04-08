@@ -2,7 +2,7 @@
  * Operating Systems Program 1 - Introduction to the POSIX programming environment: Diagnostic Shell 
  *
  * Author -  Derek Stotz
- *			 Using example code from Dr. Christer Karlsson for functions reading in from proc directory, especially get_cpu_clock_speed
+ *			 Using example code from Dr. Christer Karlsson for functions reading in from proc directory, especially get_cpu_clock_speed, snippets from shared memory use, and child process handling.
  *
  * Date - February 2, 2014
  *
@@ -87,6 +87,9 @@ int get_current()
   char *addr =  (char*)shmat(shmid, 0, 0);
 
   int *pint = (int *) addr;
+  
+  shmdt(addr); //detatch from this shared memory
+  
   return *(pint);
 }
 
@@ -102,6 +105,8 @@ bool set_current(int current)
     
   int *pint = (int *) addr;
   *(pint) = current;
+  
+  shmdt(addr); //detatch from this shared memory
   
   return true;
 }
@@ -158,6 +163,10 @@ bool get_info(int sizes[], int ids[])
         sizes[i] = *(pint + i);
         ids[i] = create_shm(SHMKEY + i, sizes[i]);
     }
+    
+    
+    shmdt(addr); //detatch from this shared memory
+    
     return true;
 }
 
@@ -181,6 +190,9 @@ bool set_info(int sizes[])
     {
         *(pint + i) = sizes[i];
     }
+    
+    shmdt(addr); //detatch from this shared memory
+    
     return true;
 }
 
@@ -311,135 +323,6 @@ string read_shm(int shmid)
   
 }
 
-int mexample_main()
-{
-int shmid; 
-  int i;
-  int pid;
-  int opid;
-  int *pint;
-  char *addr;
-
-  printf ("A shared memory test\n");
-
-  // Using SHMKEY, create one shared memory region with access permissions 0666:
-  shmid = shmget(SHMKEY, 10*K, IPC_CREAT | IPC_EXCL | READ_WRITE);
-
-  printf ("Shared memory id = %d\n", shmid);
-  if ( shmid < 0)
-  {
-    printf("***ERROR: shmid is %d\n", shmid);
-    perror("shmget failed");
-    exit(1);
-  }  
-
-  //attach the shared memory to process:
-  addr =  (char*)shmat(shmid, 0, 0);
-  printf("addr 0x%x\n", addr);
-
-  // Setup a pointer to address an array of integers:
-  pint = (int *) addr;
-
-
-  printf("Prior to fork\n");
-  pid = fork();
-
-  if (pid == 0) {
-    printf("In child, after fork\n");
-    printf("Sleep for 2 seconds while parent writes data\n");
-
-    sleep(2);
-    // Read data back and write to stdout:
-    for (i=0;i<128;i++)  
-      printf("index = %d\t value = %d\n", i, *(pint + i));
-  
-  } else {
-    printf("In parent, after fork\n");
-
-    // Write data into shared memory block:
-    for (i=0;i<128;i++)  {
-      *(pint + i) = 128 - i;
-      printf(".");
-    }
-    printf("\n");
-    exit(0);
-
-  }
-    printf("\n");
-
-  shmctl(shmid, IPC_RMID, 0);
-
-}
-
-
-
-int sexample_main()
-{
-  int id; 
-  int i;
-  int opid;
-  
-  struct sembuf lock;  
-  union semun options;
-  
-  printf ("A semaphore test\n");
-
-  // Using SEMKEY, create one semaphore with access permissions 0666:
-  id = semget(SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
-  printf ("Semaphore id = %d\n", id);
-  
-  // Initialize the semaphore at index 0
-  options.val = 1;
-  semctl(id , 0, SETVAL, options); 
-  
-  // Test that the semaphore was created correctly:
-  if (semctl(id, 0, GETVAL, 0) ==0 ) {
-    printf ("can not lock semaphore.\n");
-    exit(1);
-  }
-  
-  // print the value of the semaphore:
-  i = semctl(id, 0, GETVAL, 0);
-  printf ("Value of semaphore at index 0 is %d\n", i);
-  
-  // Set the semaphore:
-  lock.sem_num = 0;  // semaphore index
-  lock.sem_op = -1; // the operation
-  lock.sem_flg = IPC_NOWAIT;  // operation flags
-  opid = semop(id, &lock, 1);  // perform the requested operation
-  
-  // signal if an error occurred
-  if (opid == -1 ) {
-    printf ("can not lock semaphore.\n");
-    exit(1);
-  }
-  
-  // print the value of the semaphore
-  i = semctl(id, 0, GETVAL, 0);
-  printf ("Value of semaphore at index 0 is %d\n", i);
-  
-  // Unset the semaphore:
-  lock.sem_num = 0; // semaphore index
-  lock.sem_op = 1; // the operation
-  lock.sem_flg = IPC_NOWAIT; // operation flags
-  opid = semop(id, &lock, 1); // perform the requested operation
-  
-  // signal if an error occured
-  if (opid == -1 ) {
-    printf ("can not unlock semaphore.\n");
-    exit(1);
-  }
-  
-  // print the value of the semaphore
-  i = semctl(id, 0, GETVAL, 0);
-  printf ("Value of semaphore at index 0 is %d\n", i);
-  
-  // remove the semaphore
-  semctl(id, 0, IPC_RMID, 0);
-  return (0);
-  }
-
-
 //command_mboxwrite
 //
 // opens up a mailbox for writing
@@ -508,6 +391,8 @@ bool command_mboxdel(int sizes[], int id[], ostream& cout)
 {
     bool success = true;
 
+    get_info(sizes, id);
+    
     for(int i = 0; i < NUMBOXES; i++)
     {
         if(id[i] >= 0)
@@ -536,6 +421,9 @@ bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, in
 {
     bool success = true;
 
+    get_info(sizes, id);
+    current = get_current();
+    
     //make sure the user isn't exceeding the max number of boxes
     num_mailboxes = min(NUMBOXES, num_mailboxes);   
     
@@ -1562,6 +1450,15 @@ int main ()
 					if (!command_systat(cout))
 						cout << "Failed to retrieve system statistics.\n\n";
 				}
+            else if(command == "mboxinfo")
+            {
+                cout << "\nMailboxes:\n"
+                for(int i = 0; i < NUMBOXES; i++)
+                {
+                    if(shm_id[i] >= 0)
+                        cout << "\tMailbox id " << shm_id[i] << ": size " << shm_sizes[i] <<"\n";
+                }
+            }   
 			else if(command == "exit")
 				//systat logic here
 				if(input.find(" ") != -1)
