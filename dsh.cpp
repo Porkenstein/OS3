@@ -159,7 +159,7 @@ bool get_info(int sizes[], int ids[])
 
 bool set_info(int sizes[])
 {
-    int shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
+    ishmdt(shared_memory)nt shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
 
     if ( shmid < 0)
     {
@@ -186,7 +186,7 @@ bool lock_sem(int key)
     union semun options;
 
     // Using SEMKEY, create one semaphore with access permissions 0666:
-    int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
+    int id = semget(key + SEMKEY, 1, READ_WRITE);
 
      options.val = 1;
      semctl(id , 0, SETVAL, options); 
@@ -204,7 +204,7 @@ bool unlock_sem(int key)
     union semun options;
 
     // Using SEMKEY, create one semaphore with access permissions 0666:
-    int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
+    int id = semget(key + SEMKEY, 1, READ_WRITE);
 
      options.val = 0;
      semctl(id , 0, SETVAL, options); 
@@ -254,6 +254,7 @@ bool del_sem(int key)
 bool del_shm(int id, int size)
 {
     cout << "\ndeleting mailbox with id " << id;
+    shmdt(id); //detach the shared memory
     shmctl(id, IPC_RMID, 0);
 }
 
