@@ -146,7 +146,7 @@ bool get_info(int sizes[], int ids[])
 
     if ( shmid < 0)
     {
-        cout << "\nCOULD NOT GET INFO\n"
+        cout << "\nCOULD NOT GET INFO\n";
         return false;
     }  
 
