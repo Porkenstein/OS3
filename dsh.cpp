@@ -66,9 +66,9 @@ union semun
 //creates a new shared memory with a specified key and size in kb. Returns the id, or -1 if unsuccessful
 int create_shm(int key, int size)
 {
-    int id = -1;
-
-    if ((id = shmget(key + SHMKEY, K * size, READ_WRITE | IPC_CREAT | IPC_EXCL)) < 0)  //0666 permits read and write
+    int id = shmget(key + SHMKEY, K * size, READ_WRITE | IPC_CREAT | IPC_EXCL);
+    
+    if (id < 0)  //0666 permits read and write
        {
           return -1;
        }
@@ -161,7 +161,7 @@ bool get_info(int sizes[], int ids[])
     // Read data back
     for (int i=0;i<current;i++)
     {
-        ids[i] = create_shm(SHMKEY + i, sizes[i]);
+        ids[i] = shmget(i + SHMKEY, 0, 0);
         
         if(ids[i] == -1)
         {
