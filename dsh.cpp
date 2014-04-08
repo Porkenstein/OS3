@@ -1452,7 +1452,7 @@ int main ()
 				}
             else if(command == "mboxinfo")
             {
-                cout << "\nMailboxes:\n"
+                cout << "\nMailboxes:\n";
                 for(int i = 0; i < NUMBOXES; i++)
                 {
                     if(shm_id[i] >= 0)
