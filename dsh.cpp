@@ -146,6 +146,7 @@ bool get_info(int sizes[], int ids[])
 
     if ( shmid < 0)
     {
+        cout << "\nCOULD NOT GET INFO\n"
         return false;
     }  
 
@@ -155,8 +156,10 @@ bool get_info(int sizes[], int ids[])
     // Setup a pointer to address an array of integers:
     int *pint = (int *) addr;
 
-    // Read data back and write to stdout:
-    for (int i=0;i<NUMBOXES;i++)
+    int current = get_current();
+    
+    // Read data back
+    for (int i=0;i<current;i++)
     {
         sizes[i] = *(pint + i);
         ids[i] = create_shm(SHMKEY + i, sizes[i]);
@@ -429,8 +432,8 @@ bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, in
         id[i] = create_shm(i, mailbox_size);
         success = create_sem(i);
         
-        cout << "created mailbox of size " << sizes[i] << "\n";
-        cout << "\t and id " << id[i];
+        cout << "\nCreated mailbox of size " << sizes[i] << "\n";
+        cout << "\t and id " << id[i] << "\n";
     }
     current = i;
     
@@ -1447,10 +1450,12 @@ int main ()
 				}
             else if(command == "mboxinfo")
             {
-                cout << "\nMailboxes:\n";
-                for(int i = 0; i < NUMBOXES; i++)
+                get_info(shm_sizes, shm_id);
+                current_box = get_current();
+                
+                cout << "\n" << current box << " mailboxes:\n";
+                for(int i = 0; i < current_box; i++)
                 {
-                    if(shm_id[i] >= 0)
                         cout << "\tMailbox id " << shm_id[i] << ": size " << shm_sizes[i] <<"\n";
                 }
             }   
