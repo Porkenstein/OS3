@@ -124,10 +124,14 @@ bool create_infobox()
 bool del_infobox()
 {
     int shmid = shmget(INFOBOXKEY, 10*K, READ_WRITE);
+    char *addr = (char*)shmat(shmid, 0, 0);
+    shmdt(addr);
     shmctl(shmid, IPC_RMID, 0);
     
     //delete the currentbox
     shmid = shmget(CURRENTBOXKEY, 32, READ_WRITE);
+    addr = (char*)shmat(shmid, 0, 0);
+    shmdt(addr);
     shmctl(shmid, IPC_RMID, 0);
     
 }
@@ -254,7 +258,8 @@ bool del_sem(int key)
 bool del_shm(int id, int size)
 {
     cout << "\ndeleting mailbox with id " << id;
-    shmdt(id); //detach the shared memory
+    char *addr = (char*)shmat(id, 0, 0);
+    shmdt(addr); //detach the shared memory
     shmctl(id, IPC_RMID, 0);
 }
 
