@@ -88,8 +88,6 @@ int get_current()
 
   int *pint = (int *) addr;
   
-  shmdt(addr); //detatch from this shared memory
-  
   return *(pint);
 }
 
@@ -163,9 +161,6 @@ bool get_info(int sizes[], int ids[])
         sizes[i] = *(pint + i);
         ids[i] = create_shm(SHMKEY + i, sizes[i]);
     }
-    
-    
-    shmdt(addr); //detatch from this shared memory
     
     return true;
 }
