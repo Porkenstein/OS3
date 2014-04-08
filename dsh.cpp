@@ -161,8 +161,18 @@ bool get_info(int sizes[], int ids[])
     // Read data back
     for (int i=0;i<current;i++)
     {
-        sizes[i] = *(pint + i);
         ids[i] = create_shm(SHMKEY + i, sizes[i]);
+        
+        if(ids[i] == -1)
+        {
+            cout << "\nCould not get Box " << i << "\n";
+        }
+        else
+        {
+            cout << "\nBox " << i << ": ID " << ids[i] << "\n";
+            cout << "\nBox " << i << ": Size " << *(pint + i) << "\n";
+            sizes[i] = *(pint + i);
+        }
     }
     
     return true;
@@ -393,7 +403,7 @@ bool command_mboxdel(int sizes[], int id[], ostream& cout)
     
     for(int i = 0; i < NUMBOXES; i++)
     {
-        if(id[i] >= 0)
+        if(id[i] > 0)
         {
             del_sem(i);
             del_shm(id[i], sizes[i]);
@@ -424,6 +434,8 @@ bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, in
     
     //make sure the user isn't exceeding the max number of boxes
     num_mailboxes = min(NUMBOXES, num_mailboxes);   
+    
+    cout << "starting to create mailboxes.  Current = ";
     
     int i;
     for(i = current; i < num_mailboxes; i++)
