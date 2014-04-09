@@ -1,10 +1,11 @@
 /***************************************************************************//**
- * Operating Systems Program 1 - Introduction to the POSIX programming environment: Diagnostic Shell 
+ * Operating Systems Program 3 - Diagnostic Shell and Shared Memory Mailbox System
  *
  * Author -  Derek Stotz
- *			 Using example code from Dr. Christer Karlsson for functions reading in from proc directory, especially get_cpu_clock_speed, snippets from shared memory use, and child process handling.
+ *			 Using example code from Dr. Christer Karlsson for functions reading in from proc directory,
+ *           especially get_cpu_clock_speed, and snippets from shared memory use and child process handling.
  *
- * Date - February 2, 2014
+ * Date - April 8, 2014
  *
  * Instructor - Dr. Karlsson
  *
@@ -146,7 +147,6 @@ bool get_info(int sizes[], int ids[])
 
     if ( shmid < 0)
     {
-        cout << "\nCOULD NOT GET INFO\n";
         return false;
     }  
 
@@ -163,14 +163,9 @@ bool get_info(int sizes[], int ids[])
     {
         ids[i] = shmget(i + SHMKEY, 0, 0);
         
-        if(ids[i] == -1)
-        {
-            cout << "\nCould not get Box " << i << "\n";
-        }
+        if(ids[i] > 0)
         else
         {
-            cout << "\nBox " << i << ": ID " << ids[i] << "\n";
-            cout << "\nBox " << i << ": Size " << *(pint + i) << "\n";
             sizes[i] = *(pint + i);
         }
     }
@@ -255,8 +250,6 @@ int create_sem(int key)
   // Using SEMKEY, create one semaphore with access permissions 0666:
   int id = semget(key + SEMKEY, 1, IPC_CREAT | IPC_EXCL | READ_WRITE);
   
-  cout << "\ncreated semaphore with id " << id << "\n";
-  
   // Initialize the semaphore to unlocked
   options.val = 0;
   semctl(id , 0, SETVAL, options); 
@@ -271,13 +264,11 @@ int create_sem(int key)
 bool del_sem(int key)
 {
     int id = semget(key + SEMKEY, 1, READ_WRITE);
-    cout << "\ndeleting semaphore with id " << id;
     semctl(id, 0, IPC_RMID, 0);
 }
 
 bool del_shm(int id, int size)
 {
-    cout << "\ndeleting mailbox with id " << id;
     char *addr = (char*)shmat(id, 0, 0);
     shmdt(addr); //detach the shared memory
     shmctl(id, IPC_RMID, 0);
@@ -310,22 +301,15 @@ void write_shm(int shmid, int maxsize, string data)
 //returns the contents of a shared memory segment
 string read_shm(int shmid)
 {
-
-  cout << "\nREADING MAILBOX ID " << shmid << endl;
-
   if ( shmid < 0)
   {
     return "e";
   }  
-
-  cout << "\nATTACHING TO MAILBOX" << endl;
   //attach the shared memory to process:
   char *addr =  (char*)shmat(shmid, 0, 0);
 
   //build a return string
   string output = "";
-  
-  cout << "\nEXTRACTING FROM MAILBOX "<< endl;
   
   int i = 0;
   while(*(addr+i) != '\0')
@@ -375,6 +359,9 @@ bool command_mboxwrite(int sizes[], int id[], int mailbox, string writestring)
 //returns - whether or not there was success
 bool command_mboxread(int sizes[], int id[], int mailbox, string& readstring)
 {
+    if(id[mailbox] <= 0)
+        return false;
+
     readstring = read_shm(id[mailbox]);
     
     if(readstring == "e")
@@ -430,12 +417,14 @@ bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, in
     //make sure the user isn't exceeding the max number of boxes
     num_mailboxes = min(NUMBOXES, num_mailboxes);   
     
-    cout << "starting to create mailboxes.  Current = " << current;
-    cout << endl;
-    
     int i;
-    for(i = current; i < num_mailboxes; i++)
+    for(i = current; i < num_mailboxes + current; i++)
     {
+        if(i >= NUMBOXES)
+        {
+            cout << "\nToo many mailboxes.  Stopping at mailbox " << (i - 1) << endl;
+            break
+        }
         sizes[i] = mailbox_size;
         id[i] = create_shm(i, mailbox_size);
         success = create_sem(i);
