@@ -372,12 +372,9 @@ bool command_mboxread(int sizes[], int id[], int mailbox, string& readstring)
     readstring = read_shm(id[mailbox]);
     
     if(readstring == "e")
-        return false
-
-    if(success)
-        return true;
+        return false;
         
-    return false;
+    return true;
 }
 
 //command_mboxdel
@@ -465,7 +462,7 @@ bool command_mboxcopy(int sizes[], int id[], int mailbox1, int mailbox2, ostream
     bool success = false;
     string copy_string = "";
     
-    copy_string = command_mboxread(sizes[], id[], mailbox1, copy_string);
+    copy_string = command_mboxread(sizes, id, mailbox1, copy_string);
     return command_mboxwrite(sizes, id, mailbox, copy_string);
 }
 
