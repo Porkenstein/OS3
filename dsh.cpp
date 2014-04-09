@@ -310,19 +310,25 @@ void write_shm(int shmid, int maxsize, string data)
 //returns the contents of a shared memory segment
 string read_shm(int shmid)
 {
+
+  cout << "\nREADING MAILBOX ID " << shmid << endl;
+
   if ( shmid < 0)
   {
     return "e";
   }  
 
+  cout << "\nATTACHING TO MAILBOX" << endl;
   //attach the shared memory to process:
   char *addr =  (char*)shmat(shmid, 0, 0);
 
   //build a return string
   string output = "";
   
+  cout << "\nEXTRACTING FROM MAILBOX "<< endl;
+  
   int i = 0;
-  while(*addr != '\0')
+  while(*(addr+i) != '\0')
   {
     output.push_back(*(addr + i));
     i++;
