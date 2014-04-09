@@ -303,7 +303,7 @@ void write_shm(int shmid, int maxsize, string data)
       *(addr + i) = data[i];
   }
   *(addr + i) = '\0';
-  shmdet(addr);
+  shmdt(addr);
  
 }
 
@@ -356,7 +356,7 @@ bool command_mboxwrite(int sizes[], int id[], int mailbox, string writestring)
     write_shm(id[mailbox], sizes[mailbox], writestring.c_str());
     unlock_sem(mailbox);
         
-    return true
+    return true;
     }
 
 //command_mboxread
@@ -371,7 +371,7 @@ bool command_mboxread(int sizes[], int id[], int mailbox, string& readstring)
 {
     readstring = read_shm(id[mailbox]);
     
-    (if readstring == "e")
+    if(readstring == "e")
         return false
 
     if(success)
@@ -466,7 +466,7 @@ bool command_mboxcopy(int sizes[], int id[], int mailbox1, int mailbox2, ostream
     string copy_string = "";
     
     copy_string = command_mboxread(sizes[], id[], mailbox1, copy_string);
-    return command_mboxwrite(int sizes[], int id[], int mailbox, copy_string);
+    return command_mboxwrite(sizes, id, mailbox, copy_string);
 }
 
 
