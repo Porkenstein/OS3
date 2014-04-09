@@ -359,7 +359,7 @@ bool command_mboxwrite(int sizes[], int id[], int mailbox, string writestring)
     lock_sem(mailbox);
 
     //write the data then unlock the semaphore
-    write_shm(id[mailbox], sizes[mailbox], writestring.c_str());
+    write_shm(id[mailbox], sizes[mailbox] * K, writestring.c_str());
     unlock_sem(mailbox);
         
     return true;
