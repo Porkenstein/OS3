@@ -208,12 +208,6 @@ bool lock_sem(int key)
 
      options.val = 1;
      semctl(id , 0, SETVAL, options); 
-      
-      // Test that the semaphore was created correctly:
-     if (semctl(id, 0, GETVAL, 0) ==0 ) {
-       return false;
-     }
-     return true;
 }
 
 //unlock a semaphore. Return success
@@ -227,11 +221,6 @@ bool unlock_sem(int key)
      options.val = 0;
      semctl(id , 0, SETVAL, options); 
       
-      // Test that the semaphore was created correctly:
-     if (semctl(id, 0, GETVAL, 0) ==0 ) {
-       return false;
-     }
-     return true;
 }
 
 //returns true if the semaphore is unlocked.  Returns false if it's locked
