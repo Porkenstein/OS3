@@ -449,7 +449,7 @@ bool command_mboxcopy(int sizes[], int id[], int mailbox1, int mailbox2, ostream
     //spin while the mailbox is locked, then lock it and continue
     if(locked(mailbox2))
         cout << "\nMailbox currently being written to, please wait...";
-    
+        cout.flush();
     while(locked(mailbox2));
     lock_sem(mailbox2);
     
@@ -1348,6 +1348,7 @@ int main ()
                         //spin while the mailbox is locked, then lock it and continue
                         if(locked(mailbox))
                             cout << "\nMailbox currently being written to, please wait...";
+                            cout.flush();
                         
                         while(locked(mailbox));
                         lock_sem(mailbox);
