@@ -164,7 +164,6 @@ bool get_info(int sizes[], int ids[])
         ids[i] = shmget(i + SHMKEY, 0, 0);
         
         if(ids[i] > 0)
-        else
         {
             sizes[i] = *(pint + i);
         }
@@ -423,7 +422,7 @@ bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, in
         if(i >= NUMBOXES)
         {
             cout << "\nToo many mailboxes.  Stopping at mailbox " << (i - 1) << endl;
-            break
+            break;
         }
         sizes[i] = mailbox_size;
         id[i] = create_shm(i, mailbox_size);
