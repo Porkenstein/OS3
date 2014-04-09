@@ -331,11 +331,12 @@ string read_shm(int shmid)
 //returns - whether or not there was success
 bool command_mboxwrite(int sizes[], int id[], int mailbox, string writestring)
 {
-    bool success = false;
-
     //introduce error checking, since write_shm is void
     if(id[mailbox] < 1)
+    {
+        unlock_sem(mailbox);
         return false;
+    }
 
     //write the data then unlock the semaphore
     write_shm(id[mailbox], sizes[mailbox] * K, writestring.c_str());
@@ -458,12 +459,14 @@ bool command_mboxcopy(int sizes[], int id[], int mailbox1, int mailbox2, ostream
     
     //spin while the mailbox is locked, then lock it and continue
     if(locked(mailbox2))
-        cout << "\nMailbox currently being written to, please wait...\n";
+        cout << "\nMailbox currently being written to, please wait...";
     
     while(locked(mailbox2));
     lock_sem(mailbox2);
     
     return command_mboxwrite(sizes, id, mailbox2, copy_string);
+    
+    cout << endl;
 }
 
 
@@ -1355,10 +1358,11 @@ int main ()
                         int mailbox = atoi(args[0].c_str());
                         //spin while the mailbox is locked, then lock it and continue
                         if(locked(mailbox))
-                            cout << "\nMailbox currently being written to, please wait...\n";
+                            cout << "\nMailbox currently being written to, please wait...";
                         
                         while(locked(mailbox));
                         lock_sem(mailbox);
+                        cout << endl;
     
                         string writestring;
                         getline(cin, writestring, (char)4); 
