@@ -463,7 +463,7 @@ bool command_mboxcopy(int sizes[], int id[], int mailbox1, int mailbox2, ostream
     string copy_string = "";
     
     copy_string = command_mboxread(sizes, id, mailbox1, copy_string);
-    return command_mboxwrite(sizes, id, mailbox, copy_string);
+    return command_mboxwrite(sizes, id, mailbox2, copy_string);
 }
 
 
