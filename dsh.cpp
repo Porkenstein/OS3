@@ -337,10 +337,6 @@ bool command_mboxwrite(int sizes[], int id[], int mailbox, string writestring)
     if(id[mailbox] < 1)
         return false;
 
-    //spin while the mailbox is locked, then lock it and continue
-    while(locked(mailbox));
-    lock_sem(mailbox);
-
     //write the data then unlock the semaphore
     write_shm(id[mailbox], sizes[mailbox] * K, writestring.c_str());
     unlock_sem(mailbox);
@@ -391,6 +387,8 @@ bool command_mboxdel(int sizes[], int id[], ostream& cout)
         }
     }
 
+    set_current(0);
+    
     if(success)
         return true;
         
@@ -456,7 +454,14 @@ bool command_mboxcopy(int sizes[], int id[], int mailbox1, int mailbox2, ostream
     bool success = false;
     string copy_string = "";
     
-    copy_string = command_mboxread(sizes, id, mailbox1, copy_string);
+    //spin while the mailbox is locked, then lock it and continue
+    if(locked(mailbox))
+        cout << "\nMailbox currently being written to, please wait...\n";
+    
+    while(locked(mailbox));
+    lock_sem(mailbox);
+    
+    command_mboxread(sizes, id, mailbox1, copy_string);
     return command_mboxwrite(sizes, id, mailbox2, copy_string);
 }
 
@@ -1345,8 +1350,16 @@ int main ()
 					//check to see if there was only one argument	
 					if(args[0].find(" ") == -1)
 					{
+                        //spin while the mailbox is locked, then lock it and continue
+                        if(locked(mailbox))
+                            cout << "\nMailbox currently being written to, please wait...\n";
+                        
+                        while(locked(mailbox));
+                        lock_sem(mailbox);
+    
                         string writestring;
-                        getline(cin, writestring, (char)4); //deliminator is CTL^D
+                        getline(cin, writestring, (char)4); 
+                        //deliminator is CTL^D
 						if (!command_mboxwrite(shm_sizes, shm_id, atoi(args[0].c_str()), writestring))
 							cout << "Failed to open mailbox " + args[0] + " for writing.\n\n";
 					}
@@ -1434,8 +1447,8 @@ int main ()
 				}
             else if(command == "mboxinfo")
             {
-                get_info(shm_sizes, shm_id);
                 current_box = get_current();
+                get_info(shm_sizes, shm_id);
                 
                 cout << "\n" << current_box << " mailboxes:\n";
                 for(int i = 0; i < current_box; i++)
