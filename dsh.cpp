@@ -454,14 +454,15 @@ bool command_mboxcopy(int sizes[], int id[], int mailbox1, int mailbox2, ostream
     bool success = false;
     string copy_string = "";
     
+    command_mboxread(sizes, id, mailbox1, copy_string);
+    
     //spin while the mailbox is locked, then lock it and continue
-    if(locked(mailbox))
+    if(locked(mailbox2))
         cout << "\nMailbox currently being written to, please wait...\n";
     
-    while(locked(mailbox));
-    lock_sem(mailbox);
+    while(locked(mailbox2));
+    lock_sem(mailbox2);
     
-    command_mboxread(sizes, id, mailbox1, copy_string);
     return command_mboxwrite(sizes, id, mailbox2, copy_string);
 }
 
@@ -1350,6 +1351,8 @@ int main ()
 					//check to see if there was only one argument	
 					if(args[0].find(" ") == -1)
 					{
+                    
+                        int mailbox = atoi(args[0].c_str());
                         //spin while the mailbox is locked, then lock it and continue
                         if(locked(mailbox))
                             cout << "\nMailbox currently being written to, please wait...\n";
@@ -1360,7 +1363,7 @@ int main ()
                         string writestring;
                         getline(cin, writestring, (char)4); 
                         //deliminator is CTL^D
-						if (!command_mboxwrite(shm_sizes, shm_id, atoi(args[0].c_str()), writestring))
+						if (!command_mboxwrite(shm_sizes, shm_id, mailbox, writestring))
 							cout << "Failed to open mailbox " + args[0] + " for writing.\n\n";
 					}
 					else
