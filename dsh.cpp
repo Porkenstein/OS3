@@ -243,7 +243,7 @@ bool unlock_sem(int key)
 //returns true if the semaphore is unlocked.  Returns false if it's locked
 bool locked(int key)
 {
-    int id = semget(key + SEMKEY, 1, READ_WRITE);
+    int id = semget(key + SEMKEY, 0, 0);
     return semctl(id, 0, GETVAL, 0);    //1 is locked, 0 is unlocked
 }
 
@@ -303,6 +303,7 @@ void write_shm(int shmid, int maxsize, string data)
       *(addr + i) = data[i];
   }
   *(addr + i) = '\0';
+  shmdet(addr);
  
 }
 
@@ -339,28 +340,24 @@ string read_shm(int shmid)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxwrite(int sizes[], int id[], int mailbox, ostream& cout)
+bool command_mboxwrite(int sizes[], int id[], int mailbox, string writestring)
 {
     bool success = false;
 
-    //fork
+    //introduce error checking, since write_shm is void
+    if(id[mailbox] < 1)
+        return false;
 
-    //check status of the associated semaphore
-    //if it is locked, wait for it to be unlocked
-    //if it is unlocked, lock it and continue
-    
-    //connect to the mailbox and write to it
-    //exit the connection
-    //unlock the semaphore
-    //success = true
-    
-    //join
+    //spin while the mailbox is locked, then lock it and continue
+    while(locked(mailbox));
+    lock_sem(mailbox);
 
-    if(success)
-        return true;
+    //write the data then unlock the semaphore
+    write_shm(id[mailbox], sizes[mailbox], writestring.c_str());
+    unlock_sem(mailbox);
         
-    return false;
-}
+    return true
+    }
 
 //command_mboxread
 //
@@ -370,17 +367,12 @@ bool command_mboxwrite(int sizes[], int id[], int mailbox, ostream& cout)
 //cout - the ostream to display through
 //
 //returns - whether or not there was success
-bool command_mboxread(int sizes[], int id[], int mailbox, ostream& cout)
+bool command_mboxread(int sizes[], int id[], int mailbox, string& readstring)
 {
-    bool success = false;
-
-    //fork
-
-    //connect to the mailbox and read from it
-    //exit the connection
-    //success = true
+    readstring = read_shm(id[mailbox]);
     
-    //join
+    (if readstring == "e")
+        return false
 
     if(success)
         return true;
@@ -435,7 +427,8 @@ bool command_mboxinit(int sizes[], int id[], int& current, int num_mailboxes, in
     //make sure the user isn't exceeding the max number of boxes
     num_mailboxes = min(NUMBOXES, num_mailboxes);   
     
-    cout << "starting to create mailboxes.  Current = ";
+    cout << "starting to create mailboxes.  Current = " << current;
+    cout << endl;
     
     int i;
     for(i = current; i < num_mailboxes; i++)
@@ -472,25 +465,8 @@ bool command_mboxcopy(int sizes[], int id[], int mailbox1, int mailbox2, ostream
     bool success = false;
     string copy_string = "";
     
-    
-    //fork
-
-    //connect to the mailbox1 and store its contents in a string
-    
-    //check status of the associated semaphore for mailbox2
-    //if it is locked, wait for it to be unlocked
-    //if it is unlocked, lock it and continue
-    
-    //connect to the mailbox2 and write to it
-    //exit the connection
-    //unlock the semaphore
-    
-    //join
-
-    if(success)
-        return true;
-        
-    return false;
+    copy_string = command_mboxread(sizes[], id[], mailbox1, copy_string);
+    return command_mboxwrite(int sizes[], int id[], int mailbox, copy_string);
 }
 
 
@@ -1378,7 +1354,9 @@ int main ()
 					//check to see if there was only one argument	
 					if(args[0].find(" ") == -1)
 					{
-						if (!command_mboxwrite(shm_sizes, shm_id, atoi(args[0].c_str()), cout))
+                        string writestring;
+                        getline(cin, writestring, (char)4); //deliminator is CTL^D
+						if (!command_mboxwrite(shm_sizes, shm_id, atoi(args[0].c_str()), writestring))
 							cout << "Failed to open mailbox " + args[0] + " for writing.\n\n";
 					}
 					else
@@ -1401,8 +1379,11 @@ int main ()
 					//check to see if there was only one argument	
 					if(args[0].find(" ") == -1)
 					{
-						if (!command_mboxread(shm_sizes, shm_id, atoi(args[0].c_str()), cout))
+                    string readstring;
+						if (!command_mboxread(shm_sizes, shm_id, atoi(args[0].c_str()), readstring))
 							cout << "Failed to open mailbox " + args[0] + " for reading.\n\n";
+                        else
+                            cout << "\n\n" << readstring << "\n\n";
 					}
 					else
 						failed = 1;
